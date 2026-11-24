@@ -1,0 +1,16 @@
+# Build & Publish outputs
+bin/
+obj/
+publish/
+publish-standalone/
+dist-stage/
+*.zip
+
+# IDE & Test artifacts
+.vs/
+.vscode/
+TestResults/
+*.user
+*.suo
+*.pdb
+*.log

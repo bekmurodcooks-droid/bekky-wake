@@ -112,6 +112,22 @@ public sealed class BackstopRunner
             }
         }
 
+        // 1b. Restore Wireless Power Saving Mode.
+        if (state.SavedWifiPowerMode is { } savedWifi)
+        {
+            if (_sleepGuard.RestoreWifiPowerMode(savedWifi))
+            {
+                state.SavedWifiPowerMode = null;
+                _store.SaveState(state);
+                _log.Info("Backstop restored wireless power mode.");
+            }
+            else
+            {
+                allBackstopClean = false;
+                _log.Error("Backstop failed to restore wireless power mode.");
+            }
+        }
+
         // 2. Restore Windows LIDACTION.
         if (state.SleepDisabledByUs || state.SavedLidAction is not null)
         {

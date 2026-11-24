@@ -38,7 +38,7 @@
                     </Grid>
                     <CheckBox x:Name="OneClickCheck" Content="Start default session with one left-click (Alt+Click opens menu)" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
                     <CheckBox x:Name="ShowFloatingCountdownCheck" Content="Show countdown text on Floating Pill" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
-                    <CheckBox x:Name="KeepScreenAwakeCheck" Content="Keep screen on and unlocked during sessions (for GUI agents)" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
+                    <CheckBox x:Name="KeepScreenAwakeCheck" Content="Prevent display sleep &amp; Modern Standby freeze during sessions (Recommended for AI agents)" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
                     <CheckBox x:Name="SoundsCheck" Content="Play subtle tone on manual start or end" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
                     <CheckBox x:Name="LaunchAtLoginCheck" Content="Launch bekky-wake automatically when signing into Windows" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
                 </StackPanel>
@@ -49,8 +49,8 @@
             <Border Background="{StaticResource BrushSurface}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16">
                 <StackPanel>
                     <CheckBox x:Name="MuteLidCheck" Content="Mute audio outputs and restore per-device volume on lid open" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
-                    <CheckBox x:Name="DarkenDisplayCheck" Content="Turn off display and dim brightness while lid is closed" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
-                    <CheckBox x:Name="LowPowerLidCheck" Content="Enable Windows Low Power / Energy Saver while lid is closed" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
+                    <CheckBox x:Name="DarkenDisplayCheck" Content="Dim display brightness to 0% while lid is closed" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
+                    <CheckBox x:Name="LowPowerLidCheck" Content="Enable Windows Battery Saver while lid is closed (off by default so AI agents run unthrottled)" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
                     <CheckBox x:Name="LockScreenCheck" Content="Lock Windows screen on lid close (does not auto-unlock)" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
                     <CheckBox x:Name="DockerRuleCheck" Content="Pause Docker Desktop UI when no containers are running" Style="{StaticResource DarkCheckBoxStyle}" Checked="CheckChanged" Unchecked="CheckChanged"/>
                     <Grid Margin="0,10,0,0">

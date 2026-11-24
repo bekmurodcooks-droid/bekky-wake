@@ -50,6 +50,16 @@ public interface ISleepGuard
     bool RestoreLowPowerMode(SavedPowerMode? saved);
 
     /// <summary>
+    /// Sets Wireless Adapter Power Saving Mode to Maximum Performance (0), returning prior AC/DC indices.
+    /// </summary>
+    bool EnableWifiMaxPerformance(out SavedWifiPowerMode? previous);
+
+    /// <summary>
+    /// Restores Wireless Adapter Power Saving Mode to journaled AC/DC indices.
+    /// </summary>
+    bool RestoreWifiPowerMode(SavedWifiPowerMode? saved);
+
+    /// <summary>
     /// Requests immediate system suspend (Modern Standby / S3).
     /// </summary>
     bool SleepNow();
@@ -77,8 +87,6 @@ public interface IDisplayController
 {
     byte? ReadBrightness();
     bool SetBrightness(byte level);
-    bool TurnDisplayOff();
-    bool WakeDisplay();
 }
 
 public interface IAudioController

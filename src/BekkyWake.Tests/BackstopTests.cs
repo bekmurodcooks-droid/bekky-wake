@@ -49,10 +49,12 @@ public sealed class BackstopTests
             SavedLidAction = new SavedLidAction(guard.CurrentLidAction.SchemeGuid, 1, 2),
             LowPowerSetByUs = true,
             SavedPowerMode = new SavedPowerMode(guard.CurrentLidAction.SchemeGuid, 20, null),
+            SavedWifiPowerMode = new SavedWifiPowerMode(guard.CurrentLidAction.SchemeGuid, 0, 2),
             FrozenProcesses = [new FrozenProcess(555, "slack", new ProcessIdentity(77777, "boot-1"))],
             SavedAudioOutputs = [new SavedAudioOutput("dev-1", "Speakers", 0.5f, false, "save-1")]
         });
         guard.CurrentLidAction = guard.CurrentLidAction with { OriginalAcIndex = 0, OriginalDcIndex = 0 };
+        guard.CurrentWifiMode = guard.CurrentWifiMode with { OriginalAcIndex = 0, OriginalDcIndex = 0 };
 
         var runner = new BackstopRunner(scope.Store, scope.RecoveryLock, clock, guard, freezer, scope.Log);
         var status = runner.Run();
@@ -60,6 +62,7 @@ public sealed class BackstopTests
         Assert.Equal(BackstopStatus.Recovered, status);
         Assert.Equal(1u, guard.CurrentLidAction.OriginalAcIndex);
         Assert.Equal(2u, guard.CurrentLidAction.OriginalDcIndex);
+        Assert.Equal(2u, guard.CurrentWifiMode.OriginalDcIndex);
         Assert.False(guard.LowPowerEnabled);
         Assert.DoesNotContain(555, freezer.SuspendedPids);
         Assert.False(File.Exists(scope.Paths.SessionFile));

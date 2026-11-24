@@ -17,6 +17,35 @@ internal static class NativeMethods
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern EXECUTION_STATE SetThreadExecutionState(EXECUTION_STATE esFlags);
 
+    // --- Modern Standby Power Requests ---
+    public enum POWER_REQUEST_TYPE
+    {
+        PowerRequestDisplayRequired = 0,
+        PowerRequestSystemRequired = 1,
+        PowerRequestAwayModeRequired = 2,
+        PowerRequestExecutionRequired = 3
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct REASON_CONTEXT
+    {
+        public uint Version;
+        public uint Flags;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string SimpleReasonString;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr PowerCreateRequest(ref REASON_CONTEXT Context);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool PowerSetRequest(IntPtr PowerRequest, POWER_REQUEST_TYPE RequestType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool PowerClearRequest(IntPtr PowerRequest, POWER_REQUEST_TYPE RequestType);
+
     // --- System power status ---
     [StructLayout(LayoutKind.Sequential)]
     public struct SYSTEM_POWER_STATUS
@@ -68,11 +97,13 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool AttachConsole(int dwProcessId);
 
-    // --- PowrProf (Power scheme, LIDACTION, Energy Saver, Overlay, Suspend) ---
+    // --- PowrProf (Power scheme, LIDACTION, Energy Saver, Wireless, Overlay, Suspend) ---
     public static readonly Guid SubgroupButtons = new("4f971e89-eebd-4455-a8de-9e59040e7347");
     public static readonly Guid SettingLidAction = new("5ca83367-6e45-459f-a27b-476b1d01c936");
     public static readonly Guid SubgroupEnergySaver = new("de830923-a562-41af-a086-e3a2c6bad2da");
     public static readonly Guid SettingEnergySaverThreshold = new("e69653ca-cf7f-4f05-aa73-cb833fa90ad4");
+    public static readonly Guid SubgroupWireless = new("19cbb8fa-5279-450e-9fac-8a3d5fedd0c1");
+    public static readonly Guid SettingWirelessPowerSaving = new("12bbebe6-58d6-4636-95bb-3217ef867c1a");
     public static readonly Guid OverlayBetterBattery = new("961cc777-2547-4f9d-8174-7d86181b8a7a");
 
     [DllImport("powrprof.dll", SetLastError = true)]
@@ -153,20 +184,6 @@ internal static class NativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool LockWorkStation();
-
-    public const int WM_SYSCOMMAND = 0x0112;
-    public const int SC_MONITORPOWER = 0xF170;
-    public const uint SMTO_ABORTIFHUNG = 0x0002;
-
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    public static extern IntPtr SendMessageTimeout(
-        IntPtr hWnd,
-        uint Msg,
-        IntPtr wParam,
-        IntPtr lParam,
-        uint fuFlags,
-        uint uTimeout,
-        out IntPtr lpdwResult);
 
     // --- QueryDisplayConfig for internal vs external monitor detection ---
     public const uint QDC_ONLY_ACTIVE_PATHS = 0x00000002;

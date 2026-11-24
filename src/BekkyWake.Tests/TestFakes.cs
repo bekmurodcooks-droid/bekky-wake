@@ -47,6 +47,7 @@ internal sealed class FakeSleepGuard : ISleepGuard
     public bool KeepSystemAwake { get; private set; }
     public bool KeepDisplayAwake { get; private set; }
     public SavedLidAction CurrentLidAction { get; set; } = new(Guid.Parse("381b4222-f694-41f0-9685-ff5bb260df2e"), 1, 1);
+    public SavedWifiPowerMode CurrentWifiMode { get; set; } = new(Guid.Parse("381b4222-f694-41f0-9685-ff5bb260df2e"), 0, 2);
     public bool LowPowerEnabled { get; private set; }
     public int SleepNowCount { get; private set; }
     public bool FailDisableLid { get; set; }
@@ -99,6 +100,21 @@ internal sealed class FakeSleepGuard : ISleepGuard
         return true;
     }
 
+    public bool EnableWifiMaxPerformance(out SavedWifiPowerMode? previous)
+    {
+        previous = CurrentWifiMode;
+        CurrentWifiMode = CurrentWifiMode with { OriginalAcIndex = 0, OriginalDcIndex = 0 };
+        CallLog.Add("EnableWifiMax");
+        return true;
+    }
+
+    public bool RestoreWifiPowerMode(SavedWifiPowerMode? saved)
+    {
+        if (saved is not null) CurrentWifiMode = saved;
+        CallLog.Add("RestoreWifi");
+        return true;
+    }
+
     public bool SleepNow()
     {
         SleepNowCount++;
@@ -133,11 +149,8 @@ internal sealed class FakeLidObserver : ILidObserver
 internal sealed class FakeDisplayController : IDisplayController
 {
     public byte? Brightness { get; set; } = 65;
-    public bool DisplayOff { get; private set; }
     public byte? ReadBrightness() => Brightness;
     public bool SetBrightness(byte level) { Brightness = level; return true; }
-    public bool TurnDisplayOff() { DisplayOff = true; return true; }
-    public bool WakeDisplay() { DisplayOff = false; return true; }
 }
 
 internal sealed class FakeAudioController : IAudioController

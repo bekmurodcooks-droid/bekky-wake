@@ -1,6 +1,6 @@
 ﻿param(
     [string]$RepoName = "bekky-wake",
-    [string]$Tag = "v1.0.0"
+    [string]$Tag = "v1.0.1"
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,7 +56,7 @@ if (-not $hasOrigin) {
 $owner = (gh api user -q ".login")
 gh repo edit "$owner/$RepoName" --add-topic windows,wpf,keep-awake,clamshell,ai-agents,system-tray,dotnet
 
-$zipPath = Join-Path $repoRoot "bekky-wake-v1.0-win-x64.zip"
+$zipPath = Join-Path $repoRoot "bekky-wake-$Tag-win-x64.zip"
 if (Test-Path $zipPath) {
     $hash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
     $notes = @"
@@ -65,12 +65,12 @@ if (Test-Path $zipPath) {
 Self-contained single-file Windows release — no separate .NET installation required.
 
 ### Quick Start
-1. Download ``bekky-wake-v1.0-win-x64.zip`` below and extract it.
+1. Download ``bekky-wake-$Tag-win-x64.zip`` below and extract it.
 2. Double-click ``bekky-wake.exe`` (on first run, if Windows SmartScreen prompts, choose **More info -> Run anyway**).
 3. Look for the eye icon in your Windows System Tray near the bottom-right clock.
 
 ### Checksum (SHA-256)
-- ``bekky-wake-v1.0-win-x64.zip``: ``$hash``
+- ``bekky-wake-$Tag-win-x64.zip``: ``$hash``
 "@
     $prevPref = $ErrorActionPreference
     $ErrorActionPreference = "Continue"

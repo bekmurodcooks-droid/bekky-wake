@@ -41,6 +41,14 @@ public sealed record SavedPowerMode(
     Guid? OriginalOverlayScheme);
 
 /// <summary>
+/// Original Wireless Adapter Power Saving Mode AC/DC indices before setting Maximum Performance (0).
+/// </summary>
+public sealed record SavedWifiPowerMode(
+    Guid SchemeGuid,
+    uint OriginalAcIndex,
+    uint OriginalDcIndex);
+
+/// <summary>
 /// Write-ahead recovery journal persisted as state.json.
 /// Every mutation is journaled BEFORE it is applied, and cleared ONLY after undo succeeds.
 /// </summary>
@@ -51,6 +59,8 @@ public sealed class RuntimeState
 
     public bool LowPowerSetByUs { get; set; }
     public SavedPowerMode? SavedPowerMode { get; set; }
+
+    public SavedWifiPowerMode? SavedWifiPowerMode { get; set; }
 
     public List<FrozenProcess> FrozenProcesses { get; set; } = [];
     public bool DockerFrozen { get; set; }
@@ -65,6 +75,7 @@ public sealed class RuntimeState
         || SavedLidAction is not null
         || LowPowerSetByUs
         || SavedPowerMode is not null
+        || SavedWifiPowerMode is not null
         || FrozenProcesses.Count > 0
         || DockerFrozen
         || SavedAudioOutputs.Count > 0
@@ -81,6 +92,7 @@ public sealed class RuntimeState
         || SavedLidAction is not null
         || LowPowerSetByUs
         || SavedPowerMode is not null
+        || SavedWifiPowerMode is not null
         || FrozenProcesses.Count > 0
         || DockerFrozen;
 
@@ -110,6 +122,7 @@ public sealed class RuntimeState
             SavedLidAction = SavedLidAction,
             LowPowerSetByUs = LowPowerSetByUs,
             SavedPowerMode = SavedPowerMode,
+            SavedWifiPowerMode = SavedWifiPowerMode,
             FrozenProcesses = [.. FrozenProcesses],
             DockerFrozen = DockerFrozen,
             SavedAudioOutputs = [.. SavedAudioOutputs],

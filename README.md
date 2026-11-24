@@ -27,7 +27,7 @@ Normally, closing your laptop lid immediately puts Windows to sleep, killing act
 
 ## Quick Start (End Users)
 
-1. Download **`bekky-wake-v1.0-win-x64.zip`** from the [Releases](../../releases) page (it is self-contained—no separate `.NET` installation required).
+1. Download **`bekky-wake-v1.0.1-win-x64.zip`** from the [Releases](../../releases) page (it is self-contained—no separate `.NET` installation required).
 2. Extract the `.zip` folder and double-click **`bekky-wake.exe`**.
    - *First-run Windows SmartScreen note:* Because the open-source binary is not signed with a paid commercial Authenticode certificate, Windows may show *"Windows protected your PC"*. Click **More info → Run anyway** (or build directly from source below).
 3. Look for the **eye icon** in the bottom-right Windows System Tray (or inside the `^` overflow chevron):
@@ -44,14 +44,15 @@ Normally, closing your laptop lid immediately puts Windows to sleep, killing act
 - **Tray Eye + Popover (Default):** Monochrome open/closed eye in the notification area with a dark charcoal flyout showing remaining time, quick extend chips (`+30m`, `+1h`, `+2h`), live hardware badges, warnings, and **Settings…**.
 - **Floating Pill:** Optional compact always-on-top translucent pill displaying the eye, live countdown, and hold-to-end ring (remembers screen position).
 - **Minimal Eye Ring:** Circular progress arc rendered directly around the tray icon; left-click starts or extends by your default preset.
-- **Keep Screen On & Unlocked (Optional):** Off by default. Enable in Settings (`SetThreadExecutionState` with `ES_DISPLAY_REQUIRED`) when running GUI/computer-use agents that need an active unlocked desktop while the lid is open.
+- **Keep Screen & Display Pipeline Active (On by default):** Holds `PowerRequestSystemRequired`, `PowerRequestExecutionRequired`, and `PowerRequestDisplayRequired` via Windows Power Requests (`PowerCreateRequest`) + `SetThreadExecutionState` so Modern Standby (`S0ix`) and the Desktop Activity Moderator (DAM) never suspend AI agents when idle or when the lid is shut.
 
 ### 2. Clamshell-Aware Reversible Lid-Close Actions
 Using `QueryDisplayConfig`, bekky-wake checks whether an external monitor is attached before taking lid-close actions. If you are docked at a desk with an external display, it leaves screen, audio, and apps alone and simply keeps counting down. When closed standalone:
-- **Display Darkening:** Saves current panel brightness (`WmiMonitorBrightness`), dims to `0`, and sends `SC_MONITORPOWER` off; restores brightness and wakes the display when opened.
+- **Display Dimming (Modern-Standby Safe):** Saves current panel brightness (`WmiMonitorBrightness`) and dims brightness to `0%` without broadcasting `SC_MONITORPOWER = 2` (which would otherwise force Connected Standby on Modern Standby laptops); restores brightness when opened.
+- **Wi-Fi Maximum Performance:** Temporarily sets Wireless Adapter Power Saving Mode to `Maximum Performance` (`0`) during active sessions and restores your prior AC/DC setting on end so agent network streams stay alive.
 - **Per-Device Audio Mute:** Saves each active render endpoint's volume and mute state via Core Audio (`IAudioEndpointVolume`) and mutes them; restores each device on lid open (and keeps disconnected USB/Bluetooth outputs saved until they reconnect or you click *Stop waiting*).
 - **Optional Screen Lock:** Calls native `LockWorkStation()` on lid close if enabled in Settings.
-- **Low Power / Energy Saver:** Automatically enables Windows Energy Saver (`ESBATTTHRESHOLD`) and Better Battery overlay while the lid is closed, restoring your exact prior values on open.
+- **Low Power / Battery Saver:** Off on lid close by default so Windows Battery Saver does not throttle background AI agents; still triggers automatically for low battery (`< 40%`) and high heat (`>= 82 °C`) unless disabled.
 - **App Freezing with Kernel Verification:** Pauses configured background battery hogs (defaults: `Slack`, `WhatsApp`, `Discord`) via `NtSuspendProcess` and resumes them via `NtResumeProcess` ONLY after verifying **PID + kernel creation timestamp + boot session ID** (`GetProcessTimes` + `Win32_OperatingSystem.LastBootUpTime`) so a recycled PID from an unrelated app is never touched.
   - Built-in protection keeps coding agents, terminals, IDEs (`VS Code`, `Cursor`, `Antigravity`, `Zed`, JetBrains, `WindowsTerminal`, `pwsh`, `wsl`), local LLMs (`Ollama`, `LM Studio`), browsers, and meeting/recording tools (`Zoom`, `Teams`, `Webex`, `OBS`, `Loom`) running—even if *"Freeze all other desktop apps"* is enabled.
 - **Optional Idle Docker Desktop Rule:** Checks `docker ps -q` twice before pausing `Docker Desktop` UI (cancelling immediately if the lid reopens mid-check).

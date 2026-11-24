@@ -23,6 +23,8 @@ public sealed class ConfigTests
         Assert.Equal(55, cfg.LowPowerFloor);
         Assert.Equal(10, cfg.EndFloor);
         Assert.True(cfg.MuteOnLidClose);
+        Assert.True(cfg.KeepScreenAwake);
+        Assert.False(cfg.LowPowerOnLidClose);
     }
 
     [Fact]

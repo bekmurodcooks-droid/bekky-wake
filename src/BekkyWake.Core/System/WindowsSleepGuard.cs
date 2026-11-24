@@ -11,6 +11,9 @@ public sealed class WindowsSleepGuard : ISleepGuard, IDisposable
     private readonly IAppLogger _log;
     private readonly BlockingCollection<(bool SystemAwake, bool DisplayAwake, TaskCompletionSource<bool> Tcs)> _queue = new();
     private readonly Thread _execThread;
+    private IntPtr _powerRequestHandle;
+    private bool _reqSysHeld;
+    private bool _reqDispHeld;
     private bool _disposed;
 
     public WindowsSleepGuard(IAppLogger log)
@@ -34,13 +37,99 @@ public sealed class WindowsSleepGuard : ISleepGuard, IDisposable
                 if (sysAwake) flags |= NativeMethods.EXECUTION_STATE.ES_SYSTEM_REQUIRED;
                 if (dispAwake) flags |= NativeMethods.EXECUTION_STATE.ES_DISPLAY_REQUIRED;
                 var prev = NativeMethods.SetThreadExecutionState(flags);
+
+                EnsurePowerRequestHandle();
+                if (_powerRequestHandle != IntPtr.Zero)
+                {
+                    if (sysAwake != _reqSysHeld)
+                    {
+                        if (sysAwake)
+                        {
+                            NativeMethods.PowerSetRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestSystemRequired);
+                            NativeMethods.PowerSetRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestExecutionRequired);
+                        }
+                        else
+                        {
+                            NativeMethods.PowerClearRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestExecutionRequired);
+                            NativeMethods.PowerClearRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestSystemRequired);
+                        }
+                        _reqSysHeld = sysAwake;
+                    }
+
+                    if (dispAwake != _reqDispHeld)
+                    {
+                        if (dispAwake)
+                        {
+                            NativeMethods.PowerSetRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestDisplayRequired);
+                        }
+                        else
+                        {
+                            NativeMethods.PowerClearRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestDisplayRequired);
+                        }
+                        _reqDispHeld = dispAwake;
+                    }
+                }
+
                 tcs.TrySetResult(prev != 0);
             }
             catch (Exception ex)
             {
-                _log.Error($"SetThreadExecutionState failed: {ex.Message}");
+                _log.Error($"SetThreadExecutionState / PowerRequest failed: {ex.Message}");
                 tcs.TrySetResult(false);
             }
+        }
+
+        CleanupPowerRequestHandle();
+    }
+
+    private void EnsurePowerRequestHandle()
+    {
+        if (_powerRequestHandle != IntPtr.Zero) return;
+        try
+        {
+            var ctx = new NativeMethods.REASON_CONTEXT
+            {
+                Version = 0,
+                Flags = 1,
+                SimpleReasonString = "bekky-wake active timed agent session"
+            };
+            var h = NativeMethods.PowerCreateRequest(ref ctx);
+            if (h != IntPtr.Zero && h != new IntPtr(-1))
+            {
+                _powerRequestHandle = h;
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Warn($"PowerCreateRequest failed: {ex.Message}");
+        }
+    }
+
+    private void CleanupPowerRequestHandle()
+    {
+        if (_powerRequestHandle == IntPtr.Zero) return;
+        try
+        {
+            if (_reqDispHeld)
+            {
+                NativeMethods.PowerClearRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestDisplayRequired);
+                _reqDispHeld = false;
+            }
+            if (_reqSysHeld)
+            {
+                NativeMethods.PowerClearRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestExecutionRequired);
+                NativeMethods.PowerClearRequest(_powerRequestHandle, NativeMethods.POWER_REQUEST_TYPE.PowerRequestSystemRequired);
+                _reqSysHeld = false;
+            }
+            NativeMethods.CloseHandle(_powerRequestHandle);
+        }
+        catch
+        {
+            // Ignore shutdown errors.
+        }
+        finally
+        {
+            _powerRequestHandle = IntPtr.Zero;
         }
     }
 
@@ -195,6 +284,57 @@ public sealed class WindowsSleepGuard : ISleepGuard, IDisposable
         }
 
         return ok;
+    }
+
+    public bool EnableWifiMaxPerformance(out SavedWifiPowerMode? previous)
+    {
+        previous = null;
+        if (!TryGetActiveScheme(out var scheme)) return true;
+
+        var sub = NativeMethods.SubgroupWireless;
+        var set = NativeMethods.SettingWirelessPowerSaving;
+
+        var rcAc = NativeMethods.PowerReadACValueIndex(IntPtr.Zero, ref scheme, ref sub, ref set, out var ac);
+        var rcDc = NativeMethods.PowerReadDCValueIndex(IntPtr.Zero, ref scheme, ref sub, ref set, out var dc);
+        if (rcAc != 0 || rcDc != 0)
+        {
+            // Desktop or system without wireless adapter power-saving subgroup.
+            return true;
+        }
+
+        previous = new SavedWifiPowerMode(scheme, ac, dc);
+        if (ac == 0 && dc == 0) return true;
+
+        var wAc = NativeMethods.PowerWriteACValueIndex(IntPtr.Zero, ref scheme, ref sub, ref set, 0);
+        var wDc = NativeMethods.PowerWriteDCValueIndex(IntPtr.Zero, ref scheme, ref sub, ref set, 0);
+        var apply = NativeMethods.PowerSetActiveScheme(IntPtr.Zero, ref scheme);
+        if (wAc != 0 || wDc != 0 || apply != 0)
+        {
+            _log.Warn($"EnableWifiMaxPerformance failed (ac={wAc}, dc={wDc}, apply={apply}).");
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool RestoreWifiPowerMode(SavedWifiPowerMode? saved)
+    {
+        if (saved is null) return true;
+
+        var scheme = saved.SchemeGuid;
+        var sub = NativeMethods.SubgroupWireless;
+        var set = NativeMethods.SettingWirelessPowerSaving;
+
+        var wAc = NativeMethods.PowerWriteACValueIndex(IntPtr.Zero, ref scheme, ref sub, ref set, saved.OriginalAcIndex);
+        var wDc = NativeMethods.PowerWriteDCValueIndex(IntPtr.Zero, ref scheme, ref sub, ref set, saved.OriginalDcIndex);
+        var apply = NativeMethods.PowerSetActiveScheme(IntPtr.Zero, ref scheme);
+        if (wAc != 0 || wDc != 0 || apply != 0)
+        {
+            _log.Error($"RestoreWifiPowerMode failed (ac={wAc}, dc={wDc}, apply={apply}).");
+            return false;
+        }
+
+        return true;
     }
 
     public bool SleepNow()

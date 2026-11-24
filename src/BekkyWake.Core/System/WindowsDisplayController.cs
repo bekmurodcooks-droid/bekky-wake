@@ -43,30 +43,4 @@ public sealed class WindowsDisplayController : IDisplayController
             return false;
         }
     }
-
-    public bool TurnDisplayOff()
-    {
-        var result = NativeMethods.SendMessageTimeout(
-            new IntPtr(0xFFFF), // HWND_BROADCAST
-            NativeMethods.WM_SYSCOMMAND,
-            new IntPtr(NativeMethods.SC_MONITORPOWER),
-            new IntPtr(2), // Power off
-            NativeMethods.SMTO_ABORTIFHUNG,
-            1000,
-            out _);
-        return result != IntPtr.Zero;
-    }
-
-    public bool WakeDisplay()
-    {
-        var result = NativeMethods.SendMessageTimeout(
-            new IntPtr(0xFFFF),
-            NativeMethods.WM_SYSCOMMAND,
-            new IntPtr(NativeMethods.SC_MONITORPOWER),
-            new IntPtr(-1), // Power on
-            NativeMethods.SMTO_ABORTIFHUNG,
-            1000,
-            out _);
-        return result != IntPtr.Zero;
-    }
 }

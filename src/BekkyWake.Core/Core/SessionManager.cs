@@ -230,7 +230,7 @@ public sealed class SessionManager : IDisposable
                     else
                     {
                         _session = loadedSession.Session;
-                        await _sleepGuard.SetExecutionStateAsync(true, _config.KeepScreenAwake);
+                        await _sleepGuard.SetExecutionStateAsync(true, EffectiveKeepDisplayAwake);
                         EnsureBackstopRegistered();
                         ArmSessionTimersLocked();
                         endedDuringReconcile = await EvaluateFloorsLockedAsync(lockHandle);
@@ -364,7 +364,13 @@ public sealed class SessionManager : IDisposable
                                 _store.SaveState(_state);
                             }
 
-                            await _sleepGuard.SetExecutionStateAsync(true, _config.KeepScreenAwake);
+                            if (_sleepGuard.EnableWifiMaxPerformance(out var prevWifi) && prevWifi is not null)
+                            {
+                                _state.SavedWifiPowerMode ??= prevWifi;
+                                _store.SaveState(_state);
+                            }
+
+                            await _sleepGuard.SetExecutionStateAsync(true, EffectiveKeepDisplayAwake);
                             _store.SaveSession(newSession);
                             _session = newSession;
                             EnsureBackstopRegistered();
@@ -561,7 +567,7 @@ public sealed class SessionManager : IDisposable
             {
                 if (prevKeepScreen != _config.KeepScreenAwake)
                 {
-                    await _sleepGuard.SetExecutionStateAsync(true, _config.KeepScreenAwake);
+                    await _sleepGuard.SetExecutionStateAsync(true, EffectiveKeepDisplayAwake);
                 }
                 endedReason = await EvaluateFloorsLockedAsync();
             }
@@ -703,6 +709,21 @@ public sealed class SessionManager : IDisposable
             {
                 ok = false;
                 _transientWarnings.Add("Could not restore Windows Low Power Mode.");
+            }
+        }
+
+        if (_state.SavedWifiPowerMode is { } savedWifi)
+        {
+            if (_sleepGuard.RestoreWifiPowerMode(savedWifi))
+            {
+                _state.SavedWifiPowerMode = null;
+                _store.SaveState(_state);
+                _log.Info("Restored wireless adapter power saving mode.");
+            }
+            else
+            {
+                ok = false;
+                _transientWarnings.Add("Could not restore wireless adapter power saving mode.");
             }
         }
 
@@ -921,6 +942,7 @@ public sealed class SessionManager : IDisposable
                 goto Done;
             }
 
+            await _sleepGuard.SetExecutionStateAsync(true, EffectiveKeepDisplayAwake);
             var shouldApply = lidClosed && !hasExternalDisplay;
             if (shouldApply && !_lidActionsApplied)
             {
@@ -951,6 +973,8 @@ public sealed class SessionManager : IDisposable
         NotifyStateChanged(snapshot);
         if (endedReason is { } er) NotifySessionEnded(er);
     }
+
+    private bool EffectiveKeepDisplayAwake => _config.KeepScreenAwake || (_isLidClosed && !_hasExternalDisplay);
 
     private PowerSnapshot SamplePowerInternal()
     {

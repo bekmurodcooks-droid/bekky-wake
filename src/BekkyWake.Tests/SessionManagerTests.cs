@@ -56,8 +56,10 @@ public sealed class SessionManagerTests
             var (ok, err) = await mgr.TryStartAsync(TimeSpan.FromHours(1));
             Assert.True(ok, err);
             Assert.True(guard.KeepSystemAwake);
+            Assert.True(guard.KeepDisplayAwake);
             Assert.Equal(0u, guard.CurrentLidAction.OriginalAcIndex);
             Assert.Equal(0u, guard.CurrentLidAction.OriginalDcIndex);
+            Assert.Equal(0u, guard.CurrentWifiMode.OriginalDcIndex);
             Assert.True(File.Exists(scope.Paths.SessionFile));
 
             var (extOk, _) = await mgr.TryExtendAsync(TimeSpan.FromMinutes(30));
@@ -67,8 +69,10 @@ public sealed class SessionManagerTests
             var outcome = await mgr.EndAsync(EndReason.User);
             Assert.Equal(EndOutcome.Restored, outcome);
             Assert.False(guard.KeepSystemAwake);
+            Assert.False(guard.KeepDisplayAwake);
             Assert.Equal(1u, guard.CurrentLidAction.OriginalAcIndex);
             Assert.Equal(1u, guard.CurrentLidAction.OriginalDcIndex);
+            Assert.Equal(2u, guard.CurrentWifiMode.OriginalDcIndex);
             Assert.False(File.Exists(scope.Paths.SessionFile));
             Assert.Equal(0, guard.SleepNowCount); // User end does not force sleep.
         }
@@ -87,6 +91,10 @@ public sealed class SessionManagerTests
 
             var (ok, _) = await mgr.TryStartAsync(TimeSpan.FromMinutes(10));
             Assert.True(ok);
+            Assert.True(guard.KeepDisplayAwake);
+
+            await mgr.UpdateConfigAsync(c => c.KeepScreenAwake = false);
+            Assert.True(guard.KeepDisplayAwake); // Lid closed keeps display pipeline active to prevent Modern Standby freeze.
 
             var outcome = await mgr.EndAsync(EndReason.Timer);
             Assert.Equal(EndOutcome.Restored, outcome);

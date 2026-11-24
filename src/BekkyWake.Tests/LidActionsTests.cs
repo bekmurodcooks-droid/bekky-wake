@@ -33,7 +33,6 @@ public sealed class LidActionsTests
         var closeRes = await actions.ApplyLidCloseAsync(cfg, state);
         Assert.Empty(closeRes.Warnings);
         Assert.Equal(1, locker.LockCount);
-        Assert.True(display.DisplayOff);
         Assert.Equal((byte)0, display.Brightness);
         Assert.Contains("dev-1", audio.MutedIds);
         Assert.Contains(401, freezer.SuspendedPids);
@@ -46,7 +45,6 @@ public sealed class LidActionsTests
 
         var openRes = actions.UndoLidClose(state);
         Assert.Empty(openRes.Warnings);
-        Assert.False(display.DisplayOff);
         Assert.Equal((byte)75, display.Brightness);
         Assert.DoesNotContain("dev-1", audio.MutedIds);
         Assert.DoesNotContain(401, freezer.SuspendedPids);

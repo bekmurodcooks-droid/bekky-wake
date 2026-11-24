@@ -171,7 +171,7 @@ public sealed class Config
     [JsonConverter(typeof(DurationFieldConverter))]
     public DurationField DefaultFocusField { get; set; } = DurationField.Hours;
     public double MaxDuration { get; set; } = 30 * 24 * 3600;
-    public bool KeepScreenAwake { get; set; } = false;
+    public bool KeepScreenAwake { get; set; } = true;
 
     // Lid-close actions
     public List<string> FreezeList { get; set; } = [.. DefaultFreezeList];
@@ -181,7 +181,7 @@ public sealed class Config
     public bool MuteOnLidClose { get; set; } = true;
     public bool DarkenDisplayOnLidClose { get; set; } = true;
     public bool LockScreenOnLidClose { get; set; } = false;
-    public bool LowPowerOnLidClose { get; set; } = true;
+    public bool LowPowerOnLidClose { get; set; } = false;
 
     // Battery / thermal floors
     public int LowPowerFloor { get; set; } = 40;

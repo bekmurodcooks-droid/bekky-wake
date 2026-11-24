@@ -54,22 +54,25 @@ public sealed class LidActions
         if (config.DarkenDisplayOnLidClose && !state.DisplayDarkenedByUs)
         {
             var brightness = _display.ReadBrightness();
-            state.SavedDisplayBrightness ??= brightness;
-            state.DisplayDarkenedByUs = true;
-            try
+            if (brightness.HasValue)
             {
-                _store.SaveState(state);
-                if (brightness.HasValue)
+                state.SavedDisplayBrightness ??= brightness;
+                state.DisplayDarkenedByUs = true;
+                try
                 {
+                    _store.SaveState(state);
                     _display.SetBrightness(0);
+                    _log.Info($"Display dimmed to 0% on lid close (saved brightness: {brightness.Value}).");
                 }
-                _display.TurnDisplayOff();
-                _log.Info($"Display darkened on lid close (saved brightness: {brightness?.ToString() ?? "n/a"}).");
+                catch (Exception ex)
+                {
+                    warnings.Add($"Failed to dim display: {ex.Message}");
+                    _log.Error($"Display dim failed: {ex.Message}");
+                }
             }
-            catch (Exception ex)
+            else
             {
-                warnings.Add($"Failed to darken display: {ex.Message}");
-                _log.Error($"Display darken failed: {ex.Message}");
+                _log.Info("Display brightness unavailable via WMI; leaving display power state active to avoid triggering Modern Standby.");
             }
         }
 
@@ -166,7 +169,6 @@ public sealed class LidActions
             var savedBrightness = state.SavedDisplayBrightness;
             try
             {
-                _display.WakeDisplay();
                 if (savedBrightness.HasValue)
                 {
                     _display.SetBrightness(savedBrightness.Value);
@@ -174,7 +176,7 @@ public sealed class LidActions
                 state.DisplayDarkenedByUs = false;
                 state.SavedDisplayBrightness = null;
                 _store.SaveState(state);
-                _log.Info("Restored display state on lid open.");
+                _log.Info("Restored display brightness on lid open.");
             }
             catch (Exception ex)
             {

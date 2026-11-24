@@ -1,4 +1,4 @@
-# InsomniaWin
+# bekky-wake
 
 **Keep your Windows laptop awake. Give the session an end time.**
 
@@ -6,29 +6,29 @@
 ![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-303336?style=flat-square)
 ![.NET 10 Native WPF](https://img.shields.io/badge/.NET-10%20WPF-A6BBC3?style=flat-square)
 
-**InsomniaWin** is a lightweight, native Windows 10/11 system tray application for **timed closed-lid awake sessions**—built for people running **AI coding agents, local LLMs, browser automation, downloads, or long builds** on a laptop.
+**bekky-wake** is a lightweight, native Windows 10/11 system tray application for **timed closed-lid awake sessions**—built for people running **AI coding agents, local LLMs, browser automation, downloads, or long builds** on a laptop.
 
-Inspired by [`krishhgg/Insomnia`](https://github.com/krishhgg/Insomnia) for macOS, InsomniaWin brings the same safety-first, journaled transaction design natively to Windows using Win32 Power APIs, Core Audio, WMI, and a Task Scheduler recovery backstop—**with no Administrator privileges required**.
+Inspired by [`krishhgg/Insomnia`](https://github.com/krishhgg/Insomnia) for macOS, bekky-wake brings the same safety-first, journaled transaction design natively to Windows using Win32 Power APIs, Core Audio, WMI, and a Task Scheduler recovery backstop—**with no Administrator privileges required**.
 
 > **Ventilation & Safety Notice:** Always leave a running closed laptop on a stable, hard, well-ventilated surface—never inside a closed backpack or padded sleeve. Hardware thermal throttling, crash recovery, and battery cutoffs are protective layers, not absolute guarantees.
 
 ---
 
-## Why InsomniaWin Exists
+## Why bekky-wake Exists
 
 Normally, closing your laptop lid immediately puts Windows to sleep, killing active builds, local models, or autonomous coding agents. On the other hand, permanently changing *"When I close the lid -> Do nothing"* in Windows Control Panel is dangerous because it is too easy to forget to switch sleep back on—causing your laptop to overheat in a bag or drain flat overnight.
 
-**InsomniaWin treats staying awake with the lid closed as a reversible, timed transaction:**
+**bekky-wake treats staying awake with the lid closed as a reversible, timed transaction:**
 1. Set an exact duration (`30m` to `3d`, or custom `Days / Hours / Minutes`).
-2. Before changing anything, InsomniaWin records your original Windows settings to an on-disk recovery journal.
+2. Before changing anything, bekky-wake records your original Windows settings to an on-disk recovery journal.
 3. When the timer expires (or you hold the `×` ring to end early, or battery/heat crosses a safety cutoff), every change is undone automatically—and if the lid is still closed, Windows puts the laptop right back to sleep.
 
 ---
 
 ## Quick Start (End Users)
 
-1. Download **`InsomniaWin-v1.0-win-x64.zip`** from the [Releases](../../releases) page (it is self-contained—no separate `.NET` installation required).
-2. Extract the `.zip` folder and double-click **`InsomniaWin.exe`**.
+1. Download **`bekky-wake-v1.0-win-x64.zip`** from the [Releases](../../releases) page (it is self-contained—no separate `.NET` installation required).
+2. Extract the `.zip` folder and double-click **`bekky-wake.exe`**.
    - *First-run Windows SmartScreen note:* Because the open-source binary is not signed with a paid commercial Authenticode certificate, Windows may show *"Windows protected your PC"*. Click **More info → Run anyway** (or build directly from source below).
 3. Look for the **eye icon** in the bottom-right Windows System Tray (or inside the `^` overflow chevron):
    - **Closed eye** = idle (normal Windows lid-sleep behavior)
@@ -47,7 +47,7 @@ Normally, closing your laptop lid immediately puts Windows to sleep, killing act
 - **Keep Screen On & Unlocked (Optional):** Off by default. Enable in Settings (`SetThreadExecutionState` with `ES_DISPLAY_REQUIRED`) when running GUI/computer-use agents that need an active unlocked desktop while the lid is open.
 
 ### 2. Clamshell-Aware Reversible Lid-Close Actions
-Using `QueryDisplayConfig`, InsomniaWin checks whether an external monitor is attached before taking lid-close actions. If you are docked at a desk with an external display, it leaves screen, audio, and apps alone and simply keeps counting down. When closed standalone:
+Using `QueryDisplayConfig`, bekky-wake checks whether an external monitor is attached before taking lid-close actions. If you are docked at a desk with an external display, it leaves screen, audio, and apps alone and simply keeps counting down. When closed standalone:
 - **Display Darkening:** Saves current panel brightness (`WmiMonitorBrightness`), dims to `0`, and sends `SC_MONITORPOWER` off; restores brightness and wakes the display when opened.
 - **Per-Device Audio Mute:** Saves each active render endpoint's volume and mute state via Core Audio (`IAudioEndpointVolume`) and mutes them; restores each device on lid open (and keeps disconnected USB/Bluetooth outputs saved until they reconnect or you click *Stop waiting*).
 - **Optional Screen Lock:** Calls native `LockWorkStation()` on lid close if enabled in Settings.
@@ -61,8 +61,8 @@ Using `QueryDisplayConfig`, InsomniaWin checks whether an external monitor is at
 - **Thermal Protection (Default):** Samples Windows thermal zones (`Win32_PerfFormattedData_Counters_ThermalZoneInformation`) when exposed by OEM firmware—enabling Low Power Mode at **82 °C** (with hysteresis holding until cooled below **72 °C**) and ending the session at **92 °C**.
 
 ### 4. Crash-Recovery Journal & 1-Minute Task Scheduler Backstop
-- Every change is written ahead to `%LOCALAPPDATA%\InsomniaWin\state.json` under an exclusive OS file lock (`recovery.lock`).
-- Starting a session registers a user-level Windows Task Scheduler job (`InsomniaWinBackstop`) that invokes `InsomniaWin.exe --backstop` once per minute.
+- Every change is written ahead to `%LOCALAPPDATA%\bekky-wake\state.json` under an exclusive OS file lock (`recovery.lock`).
+- Starting a session registers a user-level Windows Task Scheduler job (`BekkyWakeBackstop`) that invokes `bekky-wake.exe --backstop` once per minute.
 - If the app ever crashes or is force-closed past `endsAt`, the backstop safely restores `LIDACTION`, Energy Saver, and verified suspended processes—while leaving valid unexpired sessions untouched.
 - Corrupt `session.json` files are quarantined (`session.json.unreadable-<timestamp>`) rather than discarded, and quitting is blocked if non-audio dirty state remains unresolved.
 
@@ -70,10 +70,10 @@ Using `QueryDisplayConfig`, InsomniaWin checks whether an external monitor is at
 Drive the running tray app directly from scripts, CI runners, or AI coding agents over a scoped Named Pipe:
 
 ```powershell
-InsomniaWin.exe --session start 7200    # Start a 2-hour session
-InsomniaWin.exe --session extend 1800   # Extend by 30 minutes
-InsomniaWin.exe --session status        # Print current state (works even if app is closed)
-InsomniaWin.exe --session end           # End session and restore Windows power settings
+bekky-wake.exe --session start 7200    # Start a 2-hour session
+bekky-wake.exe --session extend 1800   # Extend by 30 minutes
+bekky-wake.exe --session status        # Print current state (works even if app is closed)
+bekky-wake.exe --session end           # End session and restore Windows power settings
 ```
 
 Exit codes: `0` = success, `1` = refused / app not running, `64` = invalid CLI usage.
@@ -86,20 +86,20 @@ Detects running `Chrome`, `Edge`, `Brave`, `Arc`, or `Chromium` instances missin
 ## Architecture
 
 ```text
-InsomniaWin/
-├── InsomniaWin.sln
+bekky-wake/
+├── bekky-wake.sln
 ├── src/
-│   ├── InsomniaWin.Core/          # Cross-layer logic, models, store & Win32/COM/WMI adapters
+│   ├── BekkyWake.Core/            # Cross-layer logic, models, store & Win32/COM/WMI adapters
 │   │   ├── Core/                  # SessionManager, LidActions, FloorRules, FreezePlanner, BackstopRunner, SessionIpc
 │   │   ├── Models/                # Config, Session, RuntimeState, PowerStatus, EndReason
 │   │   ├── Store/                 # AppPaths, atomic JsonStore, RecoveryLock, RollingLogger
 │   │   └── System/                # Win32 powrprof, SetThreadExecutionState, Core Audio COM, NtSuspendProcess, WMI
-│   ├── InsomniaWin/               # Native WPF + System Tray UI (Popover, FloatingPill, Settings, EditApps)
-│   └── InsomniaWin.Tests/         # xUnit test suite (27 tests using isolated temp INSOMNIA_HOME & fakes)
+│   ├── BekkyWake/                 # Native WPF + System Tray UI (Popover, FloatingPill, Settings, EditApps)
+│   └── BekkyWake.Tests/           # xUnit test suite (27 tests using isolated temp BEKKY_WAKE_HOME & fakes)
 └── scripts/
     ├── uninstall.ps1              # Safety-checked uninstaller (Task Scheduler + HKCU Run + optional -Purge)
-    ├── simulate-lid.ps1           # Simulated lid close/open trigger for Debug / INSOMNIA_LID_SIMULATION=1
-    └── publish-github.ps1         # Helper to push repository & v1.0.0 release to GitHub via gh CLI
+    ├── simulate-lid.ps1           # Simulated lid close/open trigger for Debug / BEKKY_WAKE_LID_SIMULATION=1
+    └── publish-github.ps1         # Helper to push repository & release to GitHub via gh CLI
 ```
 
 ---
@@ -110,23 +110,23 @@ Requires **.NET 10 SDK** on Windows 10/11:
 
 ```powershell
 # Restore & build Release
-dotnet build InsomniaWin.sln -c Release
+dotnet build bekky-wake.sln -c Release
 
 # Run the xUnit test suite (completely safe: uses fakes & temp directories, never touches host power settings)
-dotnet test InsomniaWin.sln -c Release
+dotnet test bekky-wake.sln -c Release
 
 # Run directly from source
-dotnet run --project src\InsomniaWin\InsomniaWin.csproj -c Release
+dotnet run --project src\BekkyWake\BekkyWake.csproj -c Release
 
-# Publish a framework-dependent single-file binary (~770 KB, requires .NET 10 Desktop Runtime)
-dotnet publish src\InsomniaWin\InsomniaWin.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish
+# Publish a framework-dependent single-file binary (requires .NET 10 Desktop Runtime)
+dotnet publish src\BekkyWake\BekkyWake.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish
 
 # Publish a self-contained single-file binary (zero prerequisites for distribution)
-dotnet publish src\InsomniaWin\InsomniaWin.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o publish-standalone
+dotnet publish src\BekkyWake\BekkyWake.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o publish-standalone
 ```
 
 ### Testing Lid Actions Without Physically Closing Your Laptop
-In `Debug` builds (or Release builds launched with `$env:INSOMNIA_LID_SIMULATION = "1"`), trigger simulated lid events:
+In `Debug` builds (or Release builds launched with `$env:BEKKY_WAKE_LID_SIMULATION = "1"`), trigger simulated lid events:
 
 ```powershell
 .\scripts\simulate-lid.ps1 closed
@@ -141,7 +141,7 @@ The uninstaller runs `--backstop` and verifies no unresolved power or process ch
 
 ```powershell
 .\scripts\uninstall.ps1          # Removes Task Scheduler backstop & startup entry
-.\scripts\uninstall.ps1 -Purge   # Also deletes %LOCALAPPDATA%\InsomniaWin (config & logs)
+.\scripts\uninstall.ps1 -Purge   # Also deletes %LOCALAPPDATA%\bekky-wake (config & logs)
 ```
 
 ---

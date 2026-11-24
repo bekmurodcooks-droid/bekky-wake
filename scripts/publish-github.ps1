@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$RepoName = "InsomniaWin",
+    [string]$RepoName = "bekky-wake",
     [string]$Tag = "v1.0.0"
 )
 
@@ -9,12 +9,12 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    Write-Error "git is not installed or not in PATH. Install with: winget install Git.Git"
+    Write-Error "git is not installed or not in PATH."
     exit 1
 }
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-    Write-Error "GitHub CLI (gh) is not installed or not in PATH. Install with: winget install GitHub.cli"
+    Write-Error "GitHub CLI (gh) is not installed or not in PATH."
     exit 1
 }
 
@@ -41,7 +41,7 @@ if (-not (git config user.email)) {
 git add -A
 $pending = git status --porcelain
 if ($pending) {
-    git commit -m "Initial public release: InsomniaWin v1.0.0"
+    git commit -m "Release bekky-wake $Tag"
 }
 
 $hasOrigin = (git remote) -contains "origin"
@@ -53,25 +53,24 @@ if (-not $hasOrigin) {
     git push -u origin main
 }
 
-# Add helpful discovery topics
 $owner = (gh api user -q ".login")
 gh repo edit "$owner/$RepoName" --add-topic windows,wpf,keep-awake,clamshell,ai-agents,system-tray,dotnet
 
-$zipPath = Join-Path $repoRoot "InsomniaWin-v1.0-win-x64.zip"
+$zipPath = Join-Path $repoRoot "bekky-wake-v1.0-win-x64.zip"
 if (Test-Path $zipPath) {
     $hash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
     $notes = @"
-## InsomniaWin $Tag (Windows 10/11 x64)
+## bekky-wake $Tag (Windows 10/11 x64)
 
 Self-contained single-file Windows release — no separate .NET installation required.
 
 ### Quick Start
-1. Download ``InsomniaWin-v1.0-win-x64.zip`` below and extract it.
-2. Double-click ``InsomniaWin.exe`` (on first run, if Windows SmartScreen prompts, choose **More info -> Run anyway**).
+1. Download ``bekky-wake-v1.0-win-x64.zip`` below and extract it.
+2. Double-click ``bekky-wake.exe`` (on first run, if Windows SmartScreen prompts, choose **More info -> Run anyway**).
 3. Look for the eye icon in your Windows System Tray near the bottom-right clock.
 
 ### Checksum (SHA-256)
-- ``InsomniaWin-v1.0-win-x64.zip``: ``$hash``
+- ``bekky-wake-v1.0-win-x64.zip``: ``$hash``
 "@
     $prevPref = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
@@ -81,8 +80,9 @@ Self-contained single-file Windows release — no separate .NET installation req
 
     if ($releaseExists) {
         gh release upload $Tag $zipPath --clobber
+        gh release edit $Tag --title "bekky-wake $Tag" --notes $notes
     } else {
-        gh release create $Tag $zipPath --title "InsomniaWin $Tag" --notes $notes
+        gh release create $Tag $zipPath --title "bekky-wake $Tag" --notes $notes
     }
 }
 

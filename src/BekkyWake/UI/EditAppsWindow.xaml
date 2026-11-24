@@ -1,0 +1,78 @@
+<Window x:Class="BekkyWake.UI.EditAppsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Lid-Close App Rules"
+        Width="520"
+        Height="560"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BrushDeep}"
+        Foreground="{StaticResource BrushText}"
+        ResizeMode="CanResizeWithGrip">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Choose which apps keep running (coding agents, terminals, IDEs) and which pause when the lid closes."
+                   Foreground="{StaticResource BrushMuted}"
+                   FontSize="12"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,10"/>
+
+        <CheckBox x:Name="FreezeAllCheck"
+                  Grid.Row="1"
+                  Content="Freeze all other desktop apps on lid close (meeting/recording apps &amp; agents stay protected)"
+                  Style="{StaticResource DarkCheckBoxStyle}"
+                  Checked="FreezeAllChanged"
+                  Unchecked="FreezeAllChanged"/>
+
+        <Grid Grid.Row="2" Margin="0,10,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="AddProcessBox"
+                     Style="{StaticResource DarkTextBoxStyle}"
+                     ToolTip="Enter process name (e.g. spotify, notion, slack)"/>
+            <Button Grid.Column="2" Content="Add Keep Running" Style="{StaticResource ChipButtonStyle}" Click="AddKeepRunningClicked"/>
+            <Button Grid.Column="4" Content="Add Freeze" Style="{StaticResource ChipButtonStyle}" Click="AddFreezeClicked"/>
+        </Grid>
+
+        <Border Grid.Row="3"
+                Background="{StaticResource BrushSurface}"
+                BorderBrush="{StaticResource BrushBorder}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="6">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="AppsListPanel"/>
+            </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="4"
+                Background="{StaticResource BrushSurface}"
+                BorderBrush="{StaticResource BrushBorder}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="10,8"
+                Margin="0,10,0,10">
+            <TextBlock x:Name="PreviewText"
+                       Foreground="{StaticResource BrushMuted}"
+                       FontSize="11.5"
+                       TextWrapping="Wrap"/>
+        </Border>
+
+        <Grid Grid.Row="5">
+            <Button Content="Refresh Running Apps" Style="{StaticResource ChipButtonStyle}" HorizontalAlignment="Left" Click="RefreshClicked"/>
+            <Button Content="Done" Style="{StaticResource ProminentButtonStyle}" HorizontalAlignment="Right" Padding="18,6" Click="DoneClicked"/>
+        </Grid>
+    </Grid>
+</Window>
